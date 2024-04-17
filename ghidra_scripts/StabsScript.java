@@ -29,6 +29,7 @@ import ghidra.app.script.GhidraScript;
 import ghidra.app.util.bin.*;
 import ghidra.app.util.bin.format.elf.*;
 import ghidra.app.util.bin.format.elf.relocation.X86_32_ElfRelocationConstants;
+import ghidra.app.util.bin.format.pe.*;
 import ghidra.framework.cmd.Command;
 import ghidra.program.model.address.*;
 import ghidra.program.model.data.*;
@@ -271,46 +272,33 @@ public class StabsScript extends GhidraScript {
 
     @Override
     public void run() throws Exception {
-        File elfFile = new File(currentProgram.getExecutablePath());
-        FileByteProvider provider = new FileByteProvider(elfFile, null, AccessMode.READ);
-        ElfHeader elf = ElfHeader.createElfHeader(RethrowContinuesFactory.INSTANCE, provider);
-        BinaryReader reader = elf.getReader();
-        elf.parse();
+        File peFile = new File(currentProgram.getExecutablePath());
+        FileByteProvider provider = new FileByteProvider(peFile, null, AccessMode.READ);
+        PortableExecutable pe = PortableExecutable.createPortableExecutable(
+            RethrowContinuesFactory.INSTANCE, provider, PortableExecutable.SectionLayout.FILE);
+        NTHeader ntHeader = pe.getNTHeader();
+        FileHeader fileHeader = ntHeader.getFileHeader();
+        BinaryReader reader = new BinaryReader(provider, true);
 
-        ElfSectionHeader stabSection = elf.getSection(".stab");
-        ElfSectionHeader stabstrSection = elf.getSection(".stabstr");
-        ElfSectionHeader relStabSection = elf.getSection(".rel.stab");
-        Map<Integer, Address> addressMap = new TreeMap<>();
-        boolean hasRelocs = (relStabSection != null);
+        SectionHeader stabSection = null;
+        SectionHeader stabstrSection = null;
 
-        if (hasRelocs) {
-            ElfSectionHeader symtabSection = elf.getSection(".symtab");
-            ElfSectionHeader[] sections = elf.getSections();
-            ElfRelocationTable relStab = elf.getRelocationTable(relStabSection);
-            ElfRelocation[] relocs = relStab.getRelocations();
-            ElfSymbolTable symtab = elf.getSymbolTable(symtabSection);
-            ElfSymbol[] symbols = symtab.getSymbols();
-
-            for (ElfRelocation reloc : relocs) {
-                int type = reloc.getType();
-                if (type != X86_32_ElfRelocationConstants.R_386_32) {
-                    throw new RuntimeException("type != R_386_32");
-                }
-                ElfSymbol symbol = symbols[reloc.getSymbolIndex()];
-                ElfSectionHeader section = sections[symbol.getSectionHeaderIndex()];
-                String sectionName = section.getNameAsString();
-                MemoryBlock memoryBlock = currentProgram.getMemory().getBlock(sectionName);
-                int index = (int)((reloc.getOffset() - 8) / 12);
-                Address address = memoryBlock.getStart().add(symbol.getValue()).add(reloc.getAddend());
-                addressMap.put(index, address);
+        for (SectionHeader sectionHeader : fileHeader.getSectionHeaders()) {
+            String name = sectionHeader.getName();
+            if (name.equals(".stab")) {
+                stabSection = sectionHeader;
+            } else if (name.equals(".stabstr")) {
+                stabstrSection = sectionHeader;
             }
         }
 
-        long length = stabSection.getSize();
-        long entrySize = stabSection.getEntrySize();
+        Map<Integer, Address> addressMap = new TreeMap<>();
+
+        long length = stabSection.getSizeOfRawData();
+        long entrySize = 12;
         int stabCount = (int)(length / entrySize);
-        reader.setPointerIndex(stabSection.getOffset());
-        long stabStrOffset = stabstrSection.getOffset();
+        reader.setPointerIndex(stabSection.getPointerToRawData());
+        long stabStrOffset = stabstrSection.getPointerToRawData();
         long unitOffset = 0;
         long unitSize = 0;
         StringBuilder sym = new StringBuilder();
@@ -329,7 +317,7 @@ public class StabsScript extends GhidraScript {
             if (strx != 0) {
                 str = reader.readTerminatedString(stabStrOffset + unitOffset + strx, '\0');
             }
-            stabAddress = (hasRelocs ? addressMap.get(i) : toAddr(value));
+            stabAddress = addressMap.get(i);
             stabValue = value;
 
             switch (type) {
