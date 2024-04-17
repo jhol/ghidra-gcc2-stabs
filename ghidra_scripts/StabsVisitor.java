@@ -102,11 +102,13 @@ public class StabsVisitor extends StabsParserBaseVisitor<Object> {
 
         if (dataType == UNDEF && min.equals("0020000000000") && max.equals("0017777777777")) {
             return INT;
+        } else if (dataType == UNDEF && min.equals("-2147483648") && max.equals("2147483647")) {
+            return INT;
         } else if (dataType == UNDEF && min.equals("0") && max.equals("127")) {
             return CHAR;
         } else if (baseType instanceof IntegerDataType && min.equals("0020000000000") && max.equals("0017777777777")) {
             return INT;
-        } else if (baseType instanceof IntegerDataType && min.equals("0000000000000") && max.equals("0037777777777")) {
+        } else if (min.equals("0000000000000") && max.equals("0037777777777")) {
             return UINT;
         } else if (baseType instanceof IntegerDataType && min.equals("01000000000000000000000") && max.equals("0777777777777777777777")) {
             return LONGLONG;
