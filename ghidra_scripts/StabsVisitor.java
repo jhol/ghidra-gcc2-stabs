@@ -144,7 +144,7 @@ public class StabsVisitor extends StabsParserBaseVisitor<Object> {
         int rangeMax = Integer.parseInt(max);
 
         if (rangeMin != 0) {
-            throw new RuntimeException("Unknown primitive type");
+            throw new RuntimeException("Unknown primitive type" + dataType + " " + String.format("min = %s, max = %s", min, max));
         }
         if (rangeMax == -1) {
             return PointerDataType.getPointer(INT, SIZEOF_INT);  // Implicitly sized array -> decays to pointer
@@ -230,7 +230,8 @@ public class StabsVisitor extends StabsParserBaseVisitor<Object> {
             structType.setExplicitPackingValue(SIZEOF_LONGLONG);
         }
         if (structType.getLength() != structSize) {
-            throw new RuntimeException("Struct size mismatch");
+            throw new RuntimeException(String.format("Struct size mismatch structType.getLength() = %d, structSize = %d",
+                        structType.getLength(), structSize));
         }
         return structType;
     }

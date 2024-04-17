@@ -259,6 +259,25 @@ public class StabsScript extends GhidraScript {
     }
 
     private void parseStab(String str) {
+        /*
+        if (str.equals("long long int:t(0,6)=@s64;r(0,6);01000000000000000000000;0777777777777777777777;") ||
+            str.equals("long long unsigned int:t(0,7)=@s64;r(0,7);0000000000000;01777777777777777777777;") ||
+            str.equals("short int:t(0,8)=@s16;r(0,8);-32768;32767;") ||
+            str.equals("short unsigned int:t(0,9)=@s16;r(0,9);0;65535;") ||
+            str.equals("signed char:t(0,10)=@s8;r(0,10);-128;127;") ||
+            str.equals("unsigned char:t(0,11)=@s8;r(0,11);0;255;") ||
+            str.equals("complex float:t(0,16)=R3;8;0;") ||
+            str.equals("complex double:t(0,17)=R3;16;0;") ||
+            str.equals("complex long double:t(0,18)=R3;24;0;") ||
+            str.equals("_Bool:t(0,21)=@s8;-16") ||
+            str.equals("carsym:T(1,20)=s16name:(1,21)=*(0,2),0,32;file_offset:(1,10),64,64;;") ||
+            str.equals("orl:T(1,23)=s24name:(1,24)=*(1,21),0,32;u:(1,25)=u8pos:(1,10),0,64;abfd:(1,26)=*(1,3),0,32;;,64,64;namidx:(0,1),128,32;;") ||
+            false) {
+            return;
+        }
+        */
+
+        println(String.format("parseStab(\"%s\")", str));
         CharStream input = CharStreams.fromString(str);
         StabsLexer lexer = new StabsLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
