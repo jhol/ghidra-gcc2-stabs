@@ -247,7 +247,11 @@ public class StabsScript extends GhidraScript {
             dataTypeManager.addDataType(dataType, DataTypeConflictHandler.DEFAULT_HANDLER);
         }
         for (Command cmd : commands) {
-            cmd.applyTo(currentProgram);
+            try {
+                cmd.applyTo(currentProgram);
+            } catch (Exception e) {
+                println(String.format("Apply Error: %s", e.getMessage()));
+            }
         }
 
         dataTypeManager.endTransaction(id, true);
@@ -260,9 +264,20 @@ public class StabsScript extends GhidraScript {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         StabsParser parser = new StabsParser(tokens);
         parser.setErrorHandler(new BailErrorStrategy());
-        ParseTree tree = parser.symbol();
+
+        ParseTree tree = null;
+        try {
+            tree = parser.symbol();
+        } catch (Exception e) {
+            println(String.format("Parse Error: %s", e.getMessage()));
+        }
+
         StabsVisitor visitor = new StabsVisitor(this);
-        visitor.visit(tree);
+        try {
+            visitor.visit(tree);
+        } catch (Exception e) {
+            println(String.format("Visitor Error: %s", e.getMessage()));
+        }
     }
 
     @Override
